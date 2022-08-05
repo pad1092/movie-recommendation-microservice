@@ -5,6 +5,7 @@ import com.movierec.ratingservice.repository.RatingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -16,7 +17,15 @@ public class RatingService {
         return repository.findAll();
     }
 
-    public List<Rating> sortByPoint(){
+    public Rating getlistRatingByMovieId(int movieId){
+        return repository.findByMovieId(movieId);
+    }
 
+    public List<Rating> getListRatingByListMovieId(List<Integer> movieIdList){
+        List<Rating> ratingList = new ArrayList<>();
+        movieIdList.forEach(movieId -> {
+            ratingList.add(repository.findByMovieId(movieId));
+        });
+        return ratingList;
     }
 }
