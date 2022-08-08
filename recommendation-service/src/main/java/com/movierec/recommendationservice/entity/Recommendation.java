@@ -1,4 +1,4 @@
-package com.movierec.ratingservice.entity;
+package com.movierec.recommendationservice.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

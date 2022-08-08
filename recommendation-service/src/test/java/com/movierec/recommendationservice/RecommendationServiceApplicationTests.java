@@ -1,10 +1,10 @@
-package com.movierec.ratingservice;
+package com.movierec.recommendationservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class RatingServiceApplicationTests {
+class RecommendationServiceApplicationTests {
 
 	@Test
 	void contextLoads() {

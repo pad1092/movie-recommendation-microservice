@@ -1,4 +1,4 @@
-package com.movierec.ratingservice.entity;
+package com.movierec.userservice.Entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,16 +8,17 @@ import lombok.Setter;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "rating")
-@AllArgsConstructor
+@Table(name = "usertbl")
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
-public class Rating {
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int ratingId;
-    private float point;
     private int userId;
-    private int movieId;
+    private String username;
+    private String password;
+    private String fullname;
+    private String email;
 }

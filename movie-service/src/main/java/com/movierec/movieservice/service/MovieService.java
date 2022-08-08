@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class MovieService {
@@ -46,6 +48,26 @@ public class MovieService {
         movie.setGenres(genreList);
         repository.saveAndFlush(movie);
         return findMovieById(movie.getMovieId());
+    }
+
+    public List<MovieDTO> getListMovieByGenre(List<Integer> genreIdList){
+        List<Movie> movieList = new ArrayList<>();
+        genreIdList.forEach(genreId -> {
+            movieList.addAll(repository.findAllByGenres_GenreId(genreId));
+        });
+
+        Map<Integer, Long> res = movieList.stream()
+                .collect(Collectors.groupingBy(Movie::getMovieId, Collectors.counting()));
+
+        List<MovieDTO> movieDTOList = new ArrayList<>();
+        res.forEach((k, v) -> {
+            Movie movie = repository.findByMovieId(k);
+            movie.getGenres().forEach(genre -> genre.setMovies(null));
+            MovieDTO movieDTO = entityToDto(movie);
+            movieDTO.setNumOfGenre(Math.toIntExact(v));
+            movieDTOList.add(movieDTO);
+        });
+        return movieDTOList;
     }
 
     private Movie dtoToEntity(MovieDTO movieDTO){

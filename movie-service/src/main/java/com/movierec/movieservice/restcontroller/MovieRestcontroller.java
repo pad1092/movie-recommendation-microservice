@@ -32,4 +32,10 @@ public class MovieRestcontroller {
     public MovieDTO findMovieById(@PathVariable("movieId") int movieId){
         return service.findMovieById(movieId);
     }
+
+    @ResponseStatus(HttpStatus.OK)
+    @GetMapping("/genres")
+    public List<MovieDTO> findALlByListGenreId(@RequestParam("listGenreId") List<Integer> listGenreId){
+        return service.getListMovieByGenre(listGenreId);
+    }
 }

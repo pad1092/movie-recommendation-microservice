@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/rating")
@@ -21,10 +22,13 @@ public class RatingRestcontroller {
 
     @GetMapping("/movie")
     @ResponseStatus(HttpStatus.OK)
-    public List<Rating> getListRatingByListMovieId(@RequestParam("movieList") List<Integer> movieIdList){
-        System.out.println(movieIdList);
-        return null;
-//        return service.getListRatingByListMovieId(movieIdList);
+    public Map<Integer, Double> getListRatingByListMovieId(@RequestParam("movieList") List<Integer> movieIdList){
+        return service.getAvgPointOfMovie(movieIdList);
     }
 
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Rating createRating(@RequestBody Rating rating){
+        return service.createRating(rating);
+    }
 }
