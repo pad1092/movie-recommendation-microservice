@@ -17,5 +17,5 @@ import java.util.List;
 public class Recommendation {
     @Id
     private String categoryId;
-    private List<Integer> movieId;
+    private List<Movie> movieList;
 }

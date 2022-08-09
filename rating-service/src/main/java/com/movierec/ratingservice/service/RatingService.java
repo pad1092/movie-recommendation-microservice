@@ -1,7 +1,9 @@
 package com.movierec.ratingservice.service;
 
+import com.movierec.ratingservice.client.MovieClient;
 import com.movierec.ratingservice.entity.Rating;
 import com.movierec.ratingservice.repository.RatingRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +16,13 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class RatingService {
     @Autowired
     private RatingRepository repository;
+    @Autowired
+    private MovieClient movieClient;
+
 
     public List<Rating> findAll(){
         return repository.findAll();
@@ -24,6 +30,16 @@ public class RatingService {
 
     public List<Rating> getlistRatingByMovieId(int movieId){
         return repository.findListRatingByMovieId(movieId);
+    }
+
+    public String creatRating(Rating rating){
+        String msg = "Phim không còn tồn tại trên hệ thống";
+        log.info("Movie: " + movieClient.checkMovieExit(rating.getMovieId()));
+        if (movieClient.checkMovieExit(rating.getMovieId()) != null){
+            msg = "Đánh giá phim thành công";
+            repository.saveAndFlush(rating);
+        }
+        return msg;
     }
 
     public List<Rating> getListRatingByListMovieId(List<Integer> movieIdList){

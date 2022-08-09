@@ -1,6 +1,7 @@
-package com.movierec.movieservice.config;
+package com.movierec.ratingservice.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -14,7 +15,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         security.authorizeRequests(authorize -> {
             try {
                 authorize
-                        .antMatchers("/api/admin/**").authenticated()
+                        .antMatchers(HttpMethod.POST,"/api/rating").authenticated()
                         .anyRequest().permitAll()
                         .and()
                         .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt);

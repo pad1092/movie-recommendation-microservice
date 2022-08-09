@@ -20,15 +20,15 @@ public class RatingRestcontroller {
         return service.findAll();
     }
 
-    @GetMapping("/movie")
+    @GetMapping("/movies")
     @ResponseStatus(HttpStatus.OK)
     public Map<Integer, Double> getListRatingByListMovieId(@RequestParam("movieList") List<Integer> movieIdList){
         return service.getAvgPointOfMovie(movieIdList);
     }
 
-    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Rating createRating(@RequestBody Rating rating){
-        return service.createRating(rating);
+    @PostMapping
+    public String createRating(@RequestBody Rating rating){
+        return service.creatRating(rating);
     }
 }

@@ -10,4 +10,6 @@ public class Movie {
     private String name;
     private String country;
     private List<Genre> genres;
+    private int numOfGenre;
+    private float point;
 }

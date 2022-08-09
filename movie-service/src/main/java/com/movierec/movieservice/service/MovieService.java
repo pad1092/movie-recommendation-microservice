@@ -6,6 +6,7 @@ import com.movierec.movieservice.entity.Movie;
 import com.movierec.movieservice.repository.GenreRepository;
 import com.movierec.movieservice.repository.MovieRepository;
 import com.movierec.movieservice.restcontroller.MovieRestcontroller;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class MovieService {
     @Autowired
     private MovieRepository repository;
@@ -34,8 +36,12 @@ public class MovieService {
 
     public MovieDTO findMovieById(int movieId){
         Movie movie = repository.findByMovieId(movieId);
-        movie.getGenres().forEach(genre -> genre.setMovies(null));
-        return entityToDto(movie);
+        log.info("Get movie by ID");
+        if (movie != null){
+            movie.getGenres().forEach(genre -> genre.setMovies(null));
+            return entityToDto(movie);
+        }
+        return null;
     }
 
     public MovieDTO createMovie(MovieDTO movieDTO){

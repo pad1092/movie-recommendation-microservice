@@ -7,6 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableEurekaClient
+@EnableFeignClients
 public class RatingServiceApplication {
 
     public static void main(String[] args) {
