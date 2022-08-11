@@ -1,0 +1,293 @@
+version: '3.3'
+
+services:
+#  mysql database
+  mysqldb:
+    container_name: mysql-server
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - $MYSQL_LOCAL_PORT:$MYSQL_DOCKER_PORT
+    volumes:
+      - mysql:/var/lib/mysql
+    networks:
+      service-net:
+
+#vault server
+  vault:
+    container_name: vault-server
+    depends_on:
+      - mysqldb
+    restart: unless-stopped
+    build:
+      context: ./3rd-service/vault
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - $VAULT_LOCAL_PORT:$VAULT_DOCKER_PORT
+    volumes:
+      - ./3rd-service/vault/config:/vault/config
+      - ./3rd-service/vault/data:/vault/data
+      - ./3rd-service/vault/log:/vault/logs
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+    command: server -config=/vault/config/vault-config.json
+    cap_add:
+      - IPC_LOCK
+    networks:
+      service-net:
+
+#keycloak server
+  keycloak:
+    image: jboss/keycloak
+    container_name: keycloak-server
+    restart: unless-stopped
+    depends_on:
+      - mysqldb
+    volumes:
+      - keycloak-data:/var/lib/keycloak
+    env_file: .env
+    environment:
+      DB_VENDOR: mysql
+      DB_ADDR: mysqldb
+      DB_DATABASE: keycloak
+    ports:
+      - $KEYCLOAK_LOCAL_PORT:$KEYCLOAK_DOCKER_PORT
+    networks:
+      service-net:
+
+#  zipkin server
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin-server
+    restart: unless-stopped
+    ports:
+      - $ZIPKIN_LOCAL_PORT:$ZIPKIN_DOCKER_PORT
+    networks:
+      service-net:
+
+#    rabbit mq
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq-server
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - $RABBIT_LOCAL_PORT:$RABBIT_DOCKER_PORT
+      - $RABBIT_LOCAL_UI_PORT:$RABBIT_DOCKER_UI_PORT
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    networks:
+      - service-net
+
+#  mongo database
+  mongodb:
+    image: mongo
+    container_name: mongo-server
+    restart: always
+    env_file: .env
+    networks:
+      service-net:
+    ports:
+      - $MONGO_DOCKER_PORT:$MONGO_LOCAL_PORT
+    volumes:
+      - mongo-data:/var/lib/mongo
+    command: [--auth]
+
+# --------MICROSERVICE----------------
+# discovery server
+  discovery-server:
+    build: ./discovery-server/
+    env_file: .env
+    ports:
+      - $DISCOVERY_SERVER_LOCAL_PORT:$DISCOVERY_SERVER_DOCKER_PORT
+    container_name: discovery-server
+    networks:
+      service-net:
+    stdin_open: true
+    tty: true
+
+#  config server
+  config-server:
+    build: ./config-server/
+    env_file: .env
+    ports:
+      - $CONFIG_SERVER_LOCAL_PORT:$CONFIG_SERVER_DOCKER_PORT
+    networks:
+      service-net:
+    stdin_open: true
+    tty: true
+
+#gateway service
+  gateway-service:
+    build: ./gateway-service/
+    env_file: .env
+    ports:
+      - $GATE_WAY_LOCAL_PORT:$GATE_WAY_DOCKER_PORT
+    networks:
+      service-net:
+    container_name: gateway-service
+    depends_on:
+      - keycloak
+      - zipkin
+    environment:
+      - spring.security.oauth2.resourceserver.jwt.issuer-uri=http://$KEYCLOAK_HOST:$KEYCLOAK_DOCKER_PORT/auth/realms/microservice-realm
+      - eureka.client.service-url.defaultZone=$EUREKA_URL
+#      - spring.cloud.gateway.routes[0].uri=lb://movie-service
+    stdin_open: true
+    tty: true
+
+  movie-service:
+    build: ./movie-service/
+    env_file: .env
+    networks:
+      service-net:
+    container_name: movie-service
+    depends_on:
+      - mysqldb
+      - vault
+      - keycloak
+      - rabbitmq
+      - zipkin
+      - discovery-server
+      - config-server
+    environment:
+      - spring.cloud.config.uri=http://config-server:$CONFIG_SERVER_DOCKER_PORT
+      - spring.security.oauth2.resourceserver.jwt.issuer-uri=http://$KEYCLOAK_HOST:$KEYCLOAK_DOCKER_PORT/auth/realms/microservice-realm
+      - spring.cloud.vault.host=vault
+      - spring.cloud.vault.port=$VAULT_DOCKER_PORT
+      - spring.datasource.url=jdbc:mysql://mysqldb:$MYSQL_DOCKER_PORT/movie-service
+      - spring.rabbitmq.host=rabbitmq
+      - spring.rabbitmq.port=$RABBIT_DOCKER_PORT
+      - eureka.client.service-url.defaultZone=$EUREKA_URL
+      - spring.zipkin.base-url=$ZIPKIN_URL
+    stdin_open: true
+    tty: true
+
+# rating microservice
+  rating-service:
+    build: ./rating-service/
+    env_file: .env
+    networks:
+      service-net:
+    container_name: rating-service
+    depends_on:
+      - mysqldb
+      - vault
+      - keycloak
+      - rabbitmq
+      - zipkin
+      - discovery-server
+      - config-server
+    environment:
+      - spring.cloud.config.uri=http://config-server:$CONFIG_SERVER_DOCKER_PORT
+#      - spring.security.oauth2.resourceserver.jwt.issuer-uri=http://$KEYCLOAK_HOST:$KEYCLOAK_DOCKER_PORT/auth/realms/microservice-realm
+      - spring.cloud.vault.host=vault
+      - spring.cloud.vault.port=$VAULT_DOCKER_PORT
+      - spring.datasource.url=jdbc:mysql://mysqldb:$MYSQL_DOCKER_PORT/rating-service
+      - spring.rabbitmq.host=rabbitmq
+      - spring.rabbitmq.port=$RABBIT_DOCKER_PORT
+      - eureka.client.service-url.defaultZone=$EUREKA_URL
+      - spring.zipkin.base-url=$ZIPKIN_URL
+    stdin_open: true
+    ports:
+      - 12345:12345
+    tty: true
+
+#    recommendation microservice
+  recommendation-service:
+    build: ./recommendation-service/
+    env_file: .env
+    networks:
+      service-net:
+    depends_on:
+      - mysqldb
+      - vault
+      - keycloak
+      - rabbitmq
+      - zipkin
+      - discovery-server
+      - config-server
+    environment:
+      - spring.cloud.config.uri=http://config-server:$CONFIG_SERVER_DOCKER_PORT
+      - spring.security.oauth2.resourceserver.jwt.issuer-uri=http://$KEYCLOAK_HOST:$KEYCLOAK_DOCKER_PORT/auth/realms/microservice-realm
+      - spring.cloud.vault.host=vault
+      - spring.cloud.vault.port=$VAULT_DOCKER_PORT
+      - spring.data.mongodb.host=$MONGO_HOST
+      - spring.data.mongodb.port=$MONGO_DOCKER_PORT
+      - spring.rabbitmq.host=rabbitmq
+      - spring.rabbitmq.port=$RABBIT_DOCKER_PORT
+      - eureka.client.service-url.defaultZone=$EUREKA_URL
+      - spring.zipkin.base-url=$ZIPKIN_URL
+    stdin_open: true
+    tty: true
+
+  user-service:
+    build: ./user-service
+    env_file: .env
+    networks:
+      service-net:
+    container_name: user-service
+    depends_on:
+      - mysqldb
+      - vault
+      - keycloak
+      - rabbitmq
+      - zipkin
+      - discovery-server
+      - config-server
+    environment:
+      - spring.cloud.config.uri=http://config-server:$CONFIG_SERVER_DOCKER_PORT
+      - spring.security.oauth2.resourceserver.jwt.issuer-uri=http://$KEYCLOAK_HOST:$KEYCLOAK_DOCKER_PORT/auth/realms/microservice-realm
+      - spring.cloud.vault.host=vault
+      - spring.cloud.vault.port=$VAULT_DOCKER_PORT
+      - spring.datasource.url=jdbc:mysql://mysqldb:$MYSQL_DOCKER_PORT/user-service
+      - spring.rabbitmq.host=rabbitmq
+      - spring.rabbitmq.port=$RABBIT_DOCKER_PORT
+      - eureka.client.service-url.defaultZone=$EUREKA_URL
+      - spring.zipkin.base-url=$ZIPKIN_URL
+    stdin_open: true
+    tty: true
+
+  notification-service:
+    build: ./notification-service/
+    env_file: .env
+    networks:
+      service-net:
+    container_name: notification-service
+    depends_on:
+      - rabbitmq
+      - zipkin
+      - discovery-server
+    environment:
+      - eureka.client.service-url.defaultZone=$EUREKA_URL
+      - spring.rabbitmq.host=rabbitmq
+      - spring.rabbitmq.port=$RABBIT_DOCKER_PORT
+
+#  app:
+#    depends_on:
+#      - mysqldb
+#      - vault
+#    build: ./
+#    env_file: .env
+#    ports:
+#      - $SPRING_LOCAL_PORT:$SPRING_DOCKER_PORT
+#    environment:
+#      - spring.datasource.url=jdbc:mysql://$DB_HOST:$DB_DOCKER_PORT/$DB_NAME
+#      - spring.cloud.vault.host=${VAULT_HOST}
+#      - spring.cloud.vault.token=${VAULT_TOKEN}
+#    stdin_open: true
+#    tty: true
+#    networks:
+#      service-net:
+volumes:
+  mysql:
+  vault:
+  keycloak-data:
+  mongo-data:
+
+networks:
+  service-net:

@@ -58,6 +58,7 @@ public class RatingService {
 
         Map<Integer, Double> map = ratingList.stream().collect(
                 Collectors.groupingBy(e -> e.getMovieId(), Collectors.averagingDouble(Rating::getPoint)));
+        log.info("Point of list movie {} : {}", movieIdList, map);
         return map;
     }
 

@@ -24,7 +24,7 @@ class MovieServiceApplicationTests {
 	}
 	@Test
 	void test(){
-		List<Integer> list = Arrays.asList(new Integer[]{1,3,5,4});
-		service.getListMovieByGenre(list);
+//		List<Integer> list = Arrays.asList(new Integer[]{1,3,5,4});
+//		service.getListMovieByGenre(list);
 	}
 }

@@ -57,6 +57,7 @@ public class MovieService {
     }
 
     public List<MovieDTO> getListMovieByGenre(List<Integer> genreIdList){
+        log.info("Get list movie by list genreId {}", genreIdList);
         List<Movie> movieList = new ArrayList<>();
         genreIdList.forEach(genreId -> {
             movieList.addAll(repository.findAllByGenres_GenreId(genreId));
