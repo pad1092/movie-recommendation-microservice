@@ -53,6 +53,8 @@ services:
       DB_VENDOR: mysql
       DB_ADDR: mysqldb
       DB_DATABASE: keycloak
+      DB_USER: root
+      DB_PASSWORD: admin
     ports:
       - $KEYCLOAK_LOCAL_PORT:$KEYCLOAK_DOCKER_PORT
     networks:
@@ -185,6 +187,7 @@ services:
     environment:
       - spring.cloud.config.uri=http://config-server:$CONFIG_SERVER_DOCKER_PORT
 #      - spring.security.oauth2.resourceserver.jwt.issuer-uri=http://$KEYCLOAK_HOST:$KEYCLOAK_DOCKER_PORT/auth/realms/microservice-realm
+      - spring.security.oauth2.resourceserver.jwt.issuer-uri=http://host.docker.internal:9090/auth/realms/microservice-realm
       - spring.cloud.vault.host=vault
       - spring.cloud.vault.port=$VAULT_DOCKER_PORT
       - spring.datasource.url=jdbc:mysql://mysqldb:$MYSQL_DOCKER_PORT/rating-service
@@ -193,8 +196,6 @@ services:
       - eureka.client.service-url.defaultZone=$EUREKA_URL
       - spring.zipkin.base-url=$ZIPKIN_URL
     stdin_open: true
-    ports:
-      - 12345:12345
     tty: true
 
 #    recommendation microservice
@@ -266,7 +267,6 @@ services:
       - eureka.client.service-url.defaultZone=$EUREKA_URL
       - spring.rabbitmq.host=rabbitmq
       - spring.rabbitmq.port=$RABBIT_DOCKER_PORT
-
 #  app:
 #    depends_on:
 #      - mysqldb
