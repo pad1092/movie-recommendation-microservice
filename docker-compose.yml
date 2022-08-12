@@ -3,7 +3,7 @@ version: '3.3'
 services:
 #  mysql database
   mysqldb:
-    container_name: mysql-server-micro
+    container_name: mysql-server
     image: mysql:8.0
     restart: unless-stopped
     env_file:
@@ -12,14 +12,12 @@ services:
       - $MYSQL_LOCAL_PORT:$MYSQL_DOCKER_PORT
     volumes:
       - mysql:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=admin
     networks:
       service-net:
 
 #vault server
   vault:
-    container_name: vault-server-micro
+    container_name: vault-server
     depends_on:
       - mysqldb
     restart: unless-stopped
@@ -44,7 +42,7 @@ services:
 #keycloak server
   keycloak:
     image: jboss/keycloak
-    container_name: keycloak-server-micro
+    container_name: keycloak-server
     restart: unless-stopped
     depends_on:
       - mysqldb
@@ -65,7 +63,7 @@ services:
 #  zipkin server
   zipkin:
     image: openzipkin/zipkin
-    container_name: zipkin-server-micro
+    container_name: zipkin-server
     restart: unless-stopped
     ports:
       - $ZIPKIN_LOCAL_PORT:$ZIPKIN_DOCKER_PORT
@@ -75,7 +73,7 @@ services:
 #    rabbit mq
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: rabbitmq-server-micro
+    container_name: rabbitmq-server
     restart: unless-stopped
     env_file: .env
     ports:
@@ -90,7 +88,7 @@ services:
 #  mongo database
   mongodb:
     image: mongo
-    container_name: mongo-server-micro
+    container_name: mongo-server
     restart: always
     env_file: .env
     networks:
@@ -104,11 +102,11 @@ services:
 # --------MICROSERVICE----------------
 # discovery server
   discovery-server:
-    image: pad1092/discovery-server
+    build: ./discovery-server/
     env_file: .env
     ports:
       - $DISCOVERY_SERVER_LOCAL_PORT:$DISCOVERY_SERVER_DOCKER_PORT
-    container_name: discovery-server-micro
+    container_name: discovery-server
     networks:
       service-net:
     stdin_open: true
@@ -116,7 +114,7 @@ services:
 
 #  config server
   config-server:
-    image: pad1092/config-server
+    build: ./config-server/
     env_file: .env
     ports:
       - $CONFIG_SERVER_LOCAL_PORT:$CONFIG_SERVER_DOCKER_PORT
@@ -127,13 +125,13 @@ services:
 
 #gateway service
   gateway-service:
-    image: pad1092/gateway-server
+    build: ./gateway-service/
     env_file: .env
     ports:
       - $GATE_WAY_LOCAL_PORT:$GATE_WAY_DOCKER_PORT
     networks:
       service-net:
-    container_name: gateway-service-micro
+    container_name: gateway-service
     depends_on:
       - keycloak
       - zipkin
@@ -145,11 +143,11 @@ services:
     tty: true
 
   movie-service:
-    image: pad1092/movie-service
+    build: ./movie-service/
     env_file: .env
     networks:
       service-net:
-    container_name: movie-service-micro
+    container_name: movie-service
     depends_on:
       - mysqldb
       - vault
@@ -173,11 +171,11 @@ services:
 
 # rating microservice
   rating-service:
-    image: pad1092/rating-service
+    build: ./rating-service/
     env_file: .env
     networks:
       service-net:
-    container_name: rating-service-micro
+    container_name: rating-service
     depends_on:
       - mysqldb
       - vault
@@ -202,7 +200,7 @@ services:
 
 #    recommendation microservice
   recommendation-service:
-    image: pad1092/recommendation-service
+    build: ./recommendation-service/
     env_file: .env
     networks:
       service-net:
@@ -229,11 +227,11 @@ services:
     tty: true
 
   user-service:
-    image: pad1092/user-service
+    build: ./user-service
     env_file: .env
     networks:
       service-net:
-    container_name: user-service-micro
+    container_name: user-service
     depends_on:
       - mysqldb
       - vault
@@ -256,11 +254,11 @@ services:
     tty: true
 
   notification-service:
-    image: pad1092/notification-service
+    build: ./notification-service/
     env_file: .env
     networks:
       service-net:
-    container_name: notification-service-micro
+    container_name: notification-service
     depends_on:
       - rabbitmq
       - zipkin
